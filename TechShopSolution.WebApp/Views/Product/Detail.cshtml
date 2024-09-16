@@ -1,0 +1,514 @@
+﻿@model ProductDetailViewModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration;
+@using TechShopSolution.WebApp.Models
+@using System.Security.Claims;
+@{
+    ViewData["Robots"] = "index,follow";
+    int score5 = 0; int score4 = 0; int score3 = 0; int score2 = 0; int score1 = 0;
+    bool flag = true;
+    var info = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    int ratingCount = Model.Ratings.Count;
+    double totalScore = 0;
+    double bestScore = 0;
+    string ratingBy = "";
+}
+@section SEOMeta {
+    <meta property="og:type" content="og:product" />
+    <meta property="og:title" content="@Model.Product.meta_tittle" />
+    <meta property="og:image" content="@(Configuration["BaseAddress"] + "/user-content/" + Model.Product.image)" />
+    <meta property="og:description" content="@Model.Product.meta_descriptions" />
+    <meta property="og:url" content="@(Configuration["BaseAddress"] + "/" + Model.Product.slug)" />
+    <meta property="product:plural_title" content="@Model.Product.meta_tittle" />
+    <meta property="product:price:amount" content="@(Model.Product.promotion_price > 0 ?  Model.Product.promotion_price :  Model.Product.unit_price)">
+    <meta property="product:price:currency" content="VNĐ">
+    <meta property="product:price:availability" content="instock">
+    <meta property="product:price:brand" content="@Model.Product.brand_name">
+    @if (ratingCount != 0)
+    {
+        bestScore = Model.Ratings[0].score;
+        ratingBy = Model.Ratings[0].cus_name;
+        foreach (var item in Model.Ratings)
+        {
+            if (bestScore < item.score)
+            {
+                bestScore = item.score;
+                ratingBy = item.cus_name;
+            }
+            totalScore += item.score;
+        }
+        <meta itemprop="ratingValue" content="@(totalScore/ratingCount)">
+        <meta content="5" itemprop="bestRating">
+        <meta itemprop="worstRating" content="1">
+        <meta itemprop="ratingCount" content="@ratingCount">
+        <meta itemprop="reviewCount" content="@ratingCount">
+    }
+}
+
+@section AddonProductSEO{
+    <!--Này là mình dùng "Structured Data" để tối ưu SEO khi search trên công cụ tìm kiếm, các bạn có thể tìm hiểu từ khóa này-->
+    <div typeof="schema:Product">
+        <div rel="schema:image" resource="@(Configuration["BaseAddress"] + "/user-content/" + Model.Product.image)"></div>
+        <div property="schema:mpn" content="@Model.Product.code"></div>
+        <div property="schema:name" content="@Model.Product.meta_tittle"></div>
+        <div property="schema:description" content="@Model.Product.meta_descriptions"></div>
+        <div rel="schema:brand">
+            <div typeof="schema:Brand">
+                <div property="schema:name" content="@Model.Product.brand_name"></div>
+            </div>
+        </div>
+        @if (ratingCount != 0)
+        {
+            <div rel="schema:aggregateRating">
+                <div typeof="schema:AggregateRating">
+                    <div property="schema:reviewCount" content="@ratingCount"></div>
+                    <div property="schema:ratingValue" content="@(totalScore/ratingCount)"></div>
+                </div>
+            </div>
+            <div rel="schema:review">
+                <div typeof="schema:Review">
+                    <div rel="schema:reviewRating">
+                        <div typeof="schema:Rating">
+                            <div property="schema:ratingValue" content="@(totalScore/ratingCount)"></div>
+                            <div property="schema:bestRating" content="5"></div>
+                        </div>
+                    </div>
+                    <div rel="schema:author">
+                        <div typeof="schema:Person">
+                            <div property="schema:name" content="@ratingBy"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        <div rel="schema:offers">
+            <div typeof="schema:Offer">
+                <div property="schema:price" content="@(Model.Product.promotion_price > 0 ?  Model.Product.promotion_price :  Model.Product.unit_price)"></div>
+                <div property="schema:availability" content="https://schema.org/InStock"></div>
+                <div property="schema:priceCurrency" content="VNĐ"></div>
+                <div property="schema:priceValidUntil" datatype="xsd:date" content="@DateTime.Now"></div>
+                <div rel="schema:url" resource="@(Configuration["BaseAddress"] + "/" + Model.Product.slug)"></div>
+                <div property="schema:itemCondition" content="https://schema.org/UsedCondition"></div>
+            </div>
+        </div>
+        <div rel="schema:image" resource="@(Configuration["BaseAddress"] + "/user-content/" + Model.Product.image)"></div>
+    </div>
+
+    <div id="fb-root"></div>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v11.0&appId=846669762547678&autoLogAppEvents=1" nonce="xvuFE9SJ"></script>
+}
+
+@section Script{
+    <script src="~/js/Product.js"></script>
+    <script src="~/js/OrderCancelReason.js"></script>
+}
+
+@if (Model == null)
+{
+    <div class="span9">
+        <h3>Sản phẩm không tồn tại hoặc đã bị xóa !</h3>
+    </div>
+}
+else
+{
+    ViewData["Title"] = Model.Product.meta_tittle;
+    ViewData["Description"] = Model.Product.meta_descriptions;
+    ViewData["Keywords"] = Model.Product.meta_keywords;
+
+    <div class="span9 margin-bottom-20">
+        <ul class="breadcrumb">
+            <li><a href="@Url.Action("Index", "Home", new { area = "" })">Trang chủ</a> <span class="divider">/</span></li>
+            <li><a href="@Url.Action("Category", "Product", new { slug = Model.Product.cate_slug })">@Model.Product.cate_name</a> <span class="divider">/</span></li>
+            <li class="active">@Model.Product.name</li>
+        </ul>
+        <div class="row product-detail">
+            <div id="gallery" class="span3">
+                <a href="@(Configuration["BaseAddress"] + "/user-content/" + Model.Product.image)">
+                    <img src="@(Configuration["BaseAddress"] + "/user-content/" + Model.Product.image)" style="width:96%" alt="@Model.Product.name" />
+                </a>
+
+                @{
+                    if (!string.IsNullOrWhiteSpace(Model.Product.more_images))
+                    {
+                        <div id="differentview" class="moreOptopm carousel slide">
+                            <div class="carousel-inner">
+                                @{
+                                    <div class="item active">
+                                        @{
+                                            string[] more_image = Model.Product.more_images.Split(",");
+                                            foreach (var item in more_image)
+                                            {
+                                                if (!string.IsNullOrWhiteSpace(item))
+                                                {
+                                                    <a href="@(Configuration["BaseAddress"] + "/user-content/" + item)" title="@Model.Product.name"> <img style="width:29%" src="@(Configuration["BaseAddress"] + "/user-content/" + item)" alt="@Model.Product.name" title="@Model.Product.name" /></a>
+
+                                                }
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="span6">
+                <h3>@Model.Product.name</h3>
+                <div class="product-code space-between-flex">
+                    <div class="css-5nimvs">
+                        Thương hiệu: <span class="css-1meclnb">@Model.Product.brand_name</span> | Mã SP: @Model.Product.code
+                    </div>
+                </div><br />
+                <div class="product-short-desc">
+                    @Html.Raw(Model.Product.short_desc)
+                </div><br />
+                <div class="d-flex margin-bottom-10">
+                    <div class="Stars" id="rating-score-star"></div>
+                    <span id="rating-score-number"></span>
+                    <span id="rating-vote-times"></span>
+                </div>
+                @if (Model.Product.warranty > 0)
+                {
+                    <p class="margin-bottom-20">
+                        <img src="~/images/huyhieu.png" width="30" />
+                        Bảo hành: <strong>@Model.Product.warranty tháng</strong>
+                    </p>
+                }
+
+                @if (!Model.Product.isActive)
+                {
+                    <span class="stop-for-sale-text">Ngừng kinh doanh</span>
+                }
+                else if (Model.Product.promotion_price > 1)
+                {
+                    var a = Model.Product.unit_price - Model.Product.promotion_price;
+                    <span class="product-price detail-product-price">@String.Format(info, "{0:c}", Model.Product.promotion_price)&nbsp;&nbsp;</span>
+                    <span class="product-promotion-pirce">@String.Format(info, "{0:c}", Model.Product.unit_price)&nbsp;&nbsp;</span>
+                    <span class="product-total-price">Tiết kiệm @String.Format(info, "{0:c}", a)</span>
+                }
+                else
+                {
+                    <span class="product-price detail-product-price">@String.Format(info, "{0:c}", Model.Product.unit_price)</span>
+                }
+                <br />
+                <hr class="soft" />
+                @if (!Model.Product.isActive)
+                {
+
+                    <div class="btnGroup">
+                        <a class="btn btn-large btn-primary" href="@Url.Action("Index","Contact")">Liên hệ</a>
+                    </div>
+                }
+                else if (Model.Product.instock == null)
+                {
+                    <div class="btnGroup">
+                        <button type="button" class="btn btn-large btn-primary btn-add-cart" data-id="@Model.Product.id"> Thêm vào <i class=" icon-shopping-cart"></i></button>
+                        <button type="button" class="btn btn-large btn-danger btn-buy-now" data-id="@Model.Product.id"> Mua ngay</button>
+                    </div>
+                }
+                else if (Model.Product.instock == 0)
+                {
+                    <span class="OutOfStock">Hết hàng</span>
+                }
+                else
+                {
+                    <h5>
+                        @(Model.Product.instock < 5 ? "Chỉ còn lại" : "Còn lại"): @Model.Product.instock <small>sản phẩm</small>
+                    </h5>
+                    <br />
+                    <div class="btnGroup">
+                        <button type="button" class="btn btn-large btn-primary btn-add-cart" data-id="@Model.Product.id"> Thêm vào <i class=" icon-shopping-cart"></i></button>
+                        <button type="button" class="btn btn-large btn-danger btn-buy-now" data-id="@Model.Product.id"> Mua ngay</button>
+                    </div>
+                }
+                <div class="pull-right d-flex margin-right-20">
+                    <div class="product-client-infos-item">
+                        <i class="icon-eye-open product-client-infos-icon"></i>&nbsp; @Model.Product.view_count
+                    </div>
+                    <div class="product-client-infos-item">
+                        <i class="icon-heart-empty product-client-infos-icon"></i>&nbsp; <span id="favorite-total">@Model.Product.favorite_count</span>
+                    </div>
+                </div><br /><br />
+                @if (User.Identity.IsAuthenticated)
+                {
+                    if (Model.Product.isFavorite)
+                    {
+                        <div class="text-right margin-right-30" id="favorite-button-area" style="display: none">
+                            <button class="btn" id="btnFavoriteProduct" data-cusid="@User.FindFirst(ClaimTypes.Sid).Value" data-productid="@Model.Product.id">♡ Yêu thích</button>
+                        </div>
+                        <div class="text-right margin-right-30" id="unfavorite-button-area" style="display: block;">
+                            <button class="btn" id="btnUnFavoriteProduct" data-cusid="@User.FindFirst(ClaimTypes.Sid).Value" data-productid="@Model.Product.id">Hủy yêu thích</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-right margin-right-30" id="favorite-button-area" style="display: block">
+                            <button class="btn" id="btnFavoriteProduct" data-cusid="@User.FindFirst(ClaimTypes.Sid).Value" data-productid="@Model.Product.id">♡ Yêu thích</button>
+                        </div>
+                        <div class="text-right margin-right-30" id="unfavorite-button-area" style="display: none;">
+                            <button class="btn" id="btnUnFavoriteProduct" data-cusid="@User.FindFirst(ClaimTypes.Sid).Value" data-productid="@Model.Product.id">Hủy yêu thích</button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-right margin-right-30">
+                        <button class="btn" onclick="alert('Quý khách cần đăng nhập để sử dụng chức năng này')">♡ Yêu thích</button>
+                    </div>
+                }
+            </div>
+            <div class="span9">
+                <a href="#" name="detail"></a>
+                <hr class="soft" />
+                <ul id="productDetail" class="nav nav-tabs">
+                    <li class="active"><a href="#specifications" data-toggle="tab">Thông số kỹ thuật</a></li>
+                    <li><a href="#descriptions" data-toggle="tab">Chi tiết sản phẩm</a></li>
+                    <li><a href="#rating" data-toggle="tab">Đánh giá sản phẩm</a></li>
+                </ul>
+                <div id="myTabContent2" class="tab-content">
+                    <div class="tab-pane fade active in Detail-Product" id="specifications">
+                        @Html.Raw(Model.Product.specifications)
+                    </div>
+                    <div class="tab-pane fade" id="descriptions">
+                        @Html.Raw(Model.Product.descriptions)
+                    </div>
+                    <div class="tab-pane fade" id="rating">
+
+                        @if (Model.Ratings.Count == 0)
+                        {
+                            <p class="receive-title">Sản phẩm này chưa có đánh giá nào</p>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.Ratings)
+                            {
+                                <div class="review">
+                                    <div class="space-between-flex">
+                                        <h4 class="subheading">@item.content</h4>
+                                        <p class="receive-item">@item.date_rating</p>
+                                    </div>
+                                    <p class="author"><small>Bởi:</small> @item.cus_name</p>
+                                    <div class="rating rating--read-only">
+                                        @if (item.score == 1)
+                                        {
+                                            score1++;
+                                            <div aria-hidden="true">
+                                                <span class="star star--full"></span>
+                                                <span class="star"></span>
+                                                <span class="star"></span>
+                                                <span class="star"></span>
+                                                <span class="star"></span>
+                                            </div>
+                                        }
+                                        else if (item.score == 2)
+                                        {
+                                            score2++;
+                                            <div aria-hidden="true">
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star"></span>
+                                                <span class="star"></span>
+                                                <span class="star"></span>
+                                            </div>
+                                        }
+                                        else if (item.score == 3)
+                                        {
+                                            score3++;
+                                            <div aria-hidden="true">
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star"></span>
+                                                <span class="star"></span>
+                                            </div>
+                                        }
+                                        else if (item.score == 4)
+                                        {
+                                            score4++;
+                                            <div aria-hidden="true">
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star"></span>
+                                            </div>
+                                        }
+                                        else if (item.score == 5)
+                                        {
+                                            score5++;
+                                            <div aria-hidden="true">
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                                <span class="star star--full"></span>
+                                            </div>
+                                        }
+                                    </div>
+                                    <hr />
+                                </div>
+                            }
+                        }
+                        <div class="rating-box">
+                            <div class="score-container">
+                                <div class="score"></div>
+                                <div class="score-container-star-rating">
+                                    <div class="current-rating"></div>
+                                </div>
+                                <div class="reviews-stats"><span class="reviewers-small">Lượt đánh giá:</span><span class="reviews-num"></span></div>
+                            </div>
+                            <div class="rating-histogram">
+                                <div class="rating-bar-container five" valuenow="@score5"><span class="bar-label">5</span><span class="bar"></span><span class="bar-number"></span></div>
+                                <div class="rating-bar-container four" valuenow="@score4"><span class="bar-label">4</span><span class="bar"></span><span class="bar-number"></span></div>
+                                <div class="rating-bar-container three" valuenow="@score3"><span class="bar-label">3</span><span class="bar"></span><span class="bar-number"></span></div>
+                                <div class="rating-bar-container two" valuenow="@score2"><span class="bar-label">2</span><span class="bar"></span><span class="bar-number"></span></div>
+                                <div class="rating-bar-container one" valuenow="@score1"><span class="bar-label">1</span><span class="bar"></span><span class="bar-number"></span></div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            @if (!User.Identity.IsAuthenticated)
+                            {
+                                <a class="btn margin-top-20 margin-right-20" href="@Url.Action("Login", "Account",new { returnUrl = Context.Request.Path })">Viết đánh giá</a>
+                            }
+                            else
+                            {
+                                if (flag)
+                                {
+                                    <a class="btn margin-top-20 margin-right-20" onclick="showInPopup('@Url.Action("Rating", "Product",new { product_id = Model.Product.id, product_slug = Model.Product.slug }, Context.Request.Scheme)','Đánh giá sản phẩm')">Viết đánh giá</a>
+                                }
+                                else
+                                {
+                                    <a class="btn margin-top-20 margin-right-20" onclick="alert('Quý khách đã đánh giá này rồi, không thể đánh giá lại.')">Viết đánh giá</a>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <h4 class="margin-top-20">
+                    Bình luận sản phẩm
+                </h4>
+                <div class="comments-facebook">
+                    <div class="fb-comments" data-href="https://techshop.io/san-pham/@Model.Product.slug" data-width="100%" data-numposts="5"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (Model.ProductsRelated.Count != 0)
+    {
+        <h3 class=" margin-top-20">Cùng thương hiệu  <span class="product-related-brand-name">@Model.Product.brand_name</span></h3>
+    }
+    <ul class="thumbnails">
+        @{
+            if (Model.ProductsRelated != null)
+            {
+                foreach (var product in Model.ProductsRelated)
+                {
+                    <li class="span3">
+                        <div class="thumbnail">
+                            @if (product.featured)
+                            {
+                                <i class="tag-featured"></i>
+                            }
+                            else if (product.best_seller)
+                            {
+                                <i class="tag-best-seller"></i>
+                            }
+                            else if (product.promotion_price > 1)
+                            {
+                                <i class="tag-sale"></i>
+                            }
+                            else if ((DateTime.Now - product.create_at).TotalDays < 7)
+                            {
+                                <i class="tag"></i>
+                            }
+                            <a href="@Url.Action("Detail", "Product", new { slug = product.slug })"><img src="@(Configuration["BaseAddress"] + "/user-content/" + @product.image)" alt="@product.name" /></a>
+                            <div class="caption">
+                                <h5>@product.name</h5>
+                            </div>
+                            <div class="footer-thumbnail">
+                                @if (product.promotion_price > 1)
+                                {
+                                    <span class="product-price">@String.Format(info, "{0:c}", product.promotion_price)</span><br />
+                                    <span class="product-promotion-pirce">@String.Format(info, "{0:c}", product.unit_price)</span>
+                                }
+                                else
+                                {
+                                    <span class="product-price">@String.Format(info, "{0:c}", product.unit_price)</span>
+                                }
+                            </div>
+                            <h4 style="text-align:center">
+                                <a class="btn" href="@Url.Action("Detail", "Product", new { slug = product.slug })">Xem Chi tiết</a>
+                            </h4>
+                        </div>
+                    </li>
+                }
+            }
+        }
+    </ul>
+    @if (Model.ProductsRecently.Count > 1)
+    {
+        <div class="well well-small">
+            <h4>
+                Sản phẩm đã xem
+            </h4>
+            <div class="row-fluid">
+                <div id="recently" class="carousel slide">
+                    <div class="carousel-inner">
+                        @{
+                            List<List<ProductRecentlyViewModel>> recentlyProducts = new List<List<ProductRecentlyViewModel>>();
+                            List<ProductRecentlyViewModel> productPart = new List<ProductRecentlyViewModel>();
+                            var quantityRecentlyProducts = Model.ProductsRecently.Count();
+                        }
+
+                        @for (int index = 0; index < quantityRecentlyProducts; index++)
+                        {
+                            if (Model.ProductsRecently[index].id != Model.Product.id)
+                            {
+                                productPart.Add(Model.ProductsRecently[index]);
+                            }
+                            if (productPart.Count == 4 || index == quantityRecentlyProducts - 1)
+                            {
+                                recentlyProducts.Add(productPart);
+                                productPart = new List<ProductRecentlyViewModel>();
+                            }
+                        }
+                        @for (int index = 0; index < recentlyProducts.Count; index++)
+                        {
+                            <div class="item @(index == 0?"active":"")">
+                                <ul class="thumbnails recently-product">
+                                    @if (recentlyProducts[index].Count > 0)
+                                    {
+                                        @foreach (var item in recentlyProducts[index])
+                                        {
+                                            <li class="span3">
+                                                <div class="thumbnail">
+                                                    <i class="tag-featured"></i>
+                                                    <a href="@Url.Action("Detail", "Product", new { slug = item.slug })"><img src="@(Configuration["BaseAddress"] + "/user-content/" + @item.image)" alt="@item.name"></a>
+                                                    <div class="caption">
+                                                        <h5>@item.name</h5>
+                                                    </div>
+                                                    <div class="footer-thumbnail">
+                                                        @if (item.promotion_price > 1)
+                                                        {
+                                                            <span class="product-price">@String.Format(info, "{0:c}", item.promotion_price)</span>
+                                                            <span class="product-promotion-pirce">@String.Format(info, "{0:c}", item.unit_price)</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="product-price">@String.Format(info, "{0:c}", item.unit_price)</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        }
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                    <a class="left carousel-control" href="#recently" data-slide="prev">‹</a>
+                    <a class="right carousel-control" href="#recently" data-slide="next">›</a>
+                </div>
+            </div>
+        </div>
+    }
+}

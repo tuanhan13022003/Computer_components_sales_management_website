@@ -1,0 +1,48 @@
+﻿@using TechShopSolution.ViewModels.Catalog.Category
+@model List<TechShopSolution.ViewModels.Catalog.Category.CategoryViewModel>
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration;
+
+
+<div class="navbar-inner">
+    <a class="brand" href="@Url.Action("Index", "Home", new { area = "" })"><img src="@(Configuration["BaseAddress"] + "/user-content/" + @ViewBag.Company_Logo)" class="logo-company-navbar" alt="TechShop" /></a>
+
+    <form class="form-inline navbar-search" asp-controller="Product" asp-action="SearchProducts" method="get">
+        <input placeholder="Nhập tên sản phẩm..." type="text" name="tukhoa" />
+        <select class="srchTxt w-100" name="danhmuc" asp-items="@(new SelectList(ViewBag.Parents,"cate_slug","cate_name"))">
+            <option value="">Tất cả</option>
+        </select>
+        <button type="submit" class="btn btn-success">Tìm kiếm</button>
+    </form>
+    <ul id="topMenu" class="nav">
+        <li class=""><a href="#">Về Chúng Tôi</a></li>
+        <li class=""><a href="#">Bài Viết</a></li>
+        <li class=""><a href="@Url.Action("Index", "Contact")">Kết Nối</a></li>
+    </ul>
+    @if (User.Identity.IsAuthenticated)
+    {
+
+        <div class="btn-group btnDropdownAccount">
+            <label class="dropdown">
+                <div class="dd-button">
+                    Tài khoản
+                </div>
+
+                <input type="checkbox" class="dd-input" id="test">
+                <ul class="dd-menu">
+                    <li><a href="@Url.Action("Detail", "Account")"><i class="icon-pencil"></i> Thông tin tài khoản</a></li>
+                    <li><a href="@Url.Action("OrderTracking", "Order")"><i class="icon-file"></i> Kiểm tra đơn hàng</a></li>
+                    <li><a href="@Url.Action("FavoriteProducts", "Account")"><i class="icon-heart-empty"></i> Sản phẩm yêu thích</a></li>
+                    <li><a href="@Url.Action("RecentlyProducts", "Account")"><i class="icon-eye-open"></i> Sản phẩm đã xem</a></li>
+                    <li class="divider"></li>
+                    <li><a href="@Url.Action("Logout", "Account")"><i class="i"></i>Đăng xuất</a></li>
+                </ul>
+            </label>
+        </div>
+    }
+    else
+    {
+        <div class="btn-group btnDropdownAccount">
+            <a href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path })" role="button" style="padding-right:0"><span class="btn btn-large btn-warning">Đăng nhập</span></a>
+        </div>
+    }
+</div>

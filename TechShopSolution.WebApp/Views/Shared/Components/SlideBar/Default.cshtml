@@ -1,0 +1,88 @@
+﻿@using TechShopSolution.ViewModels.Catalog.Category
+@model List<TechShopSolution.ViewModels.Catalog.Category.CategoryViewModel>
+
+
+<ul id="sideManu" class="nav nav-tabs nav-stacked">
+    @if (Model.Count > 0)
+    {
+        List<CategoryViewModel> Cates = Model.ToList();
+        List<CategoryViewModel> parents = Model.Where(x => x.parent_id == 0).OrderBy(x => x.cate_name).ToList();
+        int i = 0;
+        @foreach (var parent in parents.ToList())
+        {
+            var children = Cates.Where(x => x.parent_id == parent.id).OrderBy(x => x.cate_name);
+            {
+                if (i == 0)
+                {
+                    i = 1;
+                    <li class="subMenu open">
+                        <a class="active" href="@Url.Action("Category", "Product", new { slug = parent.cate_slug })">@parent.cate_name</a>
+
+                        @{
+                            Cates.Remove(parent);
+                        }
+                        <ul>
+                            @foreach (var item in children.ToList())
+                            {
+                                <li>
+                                    <a class="active" href="@Url.Action("Category", "Product", new { slug = item.cate_slug })"><i class="icon-chevron-right"></i>@item.cate_name</a>
+                                    @{
+                                        Cates.Remove(item);
+                                    }
+                                    @{
+                                        var childItems = Cates.Where(x => x.parent_id == item.id).OrderBy(x => x.cate_name);
+                                        @foreach (var itemChild in childItems.ToList().OrderBy(x=>x.cate_name))
+                                        {
+                                            <a href="@Url.Action("Category", "Product", new { slug = itemChild.cate_slug })">
+                                                <span class="padding-left">
+                                                    <i class="icon-chevron-right"></i>
+                                                    @itemChild.cate_name
+                                                </span>
+                                            </a>
+                                            Cates.Remove(itemChild);
+                                        }
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    <li class="subMenu">
+                        <a class="cate-parent-name" href="@Url.Action("Category", "Product", new { slug = parent.cate_slug })">@parent.cate_name</a>
+                        @{
+                            Cates.Remove(parent);
+                        }
+                        <ul>
+                            @foreach (var item in children.ToList())
+                            {
+                                <li>
+                                    <a href="@Url.Action("Category", "Product", new { slug = item.cate_slug })"><i class="icon-chevron-right"></i>@item.cate_name</a>
+                                    @{
+                                        Cates.Remove(item);
+                                    }
+                                    @{
+                                        var childItems = Cates.Where(x => x.parent_id == item.id).OrderBy(x => x.cate_name);
+                                        @foreach (var itemChild in childItems.ToList())
+                                        {
+                                            <a href="@Url.Action("Category", "Product", new { slug = itemChild.cate_slug })">
+                                                <span class="padding-left">
+                                                    <i class="icon-chevron-right"></i>
+                                                    @itemChild.cate_name
+                                                </span>
+                                            </a>
+                                            Cates.Remove(itemChild);
+                                        }
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+            }
+
+        }
+    }
+</ul>
+
